@@ -2,7 +2,7 @@ import requests
 import argparse
 import datetime
 import json
-
+from collections import Counter
 '''
 user send his flight parameters 
 for example: --date 2018-04-13 --from BCN --to DUB --one-way
@@ -15,11 +15,12 @@ parser.add_argument('--one-way', action='store_true')
 parser.add_argument('--cheapest', action='store_true')
 parser.add_argument('--shortest', action='store_true')
 parser.add_argument('--fastest', action='store_true')
-parser.add_argument('--return', action='store_true')
+parser.add_argument('--return')
 parser.add_argument('--bags')
 
-args = vars(parser.parse_args())
 
+args = vars(parser.parse_args())
+# print(args)
 '''
 create a dict with values from user's param
 '''
@@ -30,7 +31,8 @@ check_flight = {'flyFrom': None,
                 'daysInDestinationFrom': None,
                 'sort': None,
                 'typeFlight': None,
-                'bags': None
+                'bags': None,
+                'return': None,
                 }
 
 days = datetime.datetime.strptime(args['date'], '%Y-%m-%d').strftime('%d/%m/%Y')
@@ -66,13 +68,16 @@ def check_args(check_flight):
         check_flight['typeFlight'] = None
     return check_flight
 
-
 check_args(check_flight)
 
 # print(check_flight)
-
-r = requests.get('https://api.skypicker.com/flights', params=check_flight)
-flight = r.json()['data'][0]
+try:
+    r = requests.get('https://api.skypicker.com/flights', params=check_flight)
+    flight = r.json()['data'][0]
+except:
+    print('uups, something is wrong, check if your data are correct')
+    exit()
+# print(flight)
 
 # booking of the flight
 
@@ -81,12 +86,12 @@ url = 'http://128.199.48.38:8080/booking'
 information = {
     "passengers": [
         {
-            "firstName": "Kaja",
+            "firstName": "Milos",
             "birthday": "1901-12-12",
-            "lastName": "test",
+            "lastName": "Zeman",
             "title": "Mr",
-            "documentID": "bla bla bla bla",
-            "email": "kecyprdbedary@ihatemonday.com",
+            "documentID": "Su prezident, bleeee",
+            "email": "zhradudoprdele@ovcacek.com",
 
         }
     ],
@@ -94,10 +99,30 @@ information = {
     "booking_token": flight['booking_token'],
     "bags": check_flight['bags']
 }
-print(information)
+# print(information)
 headers = {'content-type': 'application/json'}
 r = requests.post(url, data=json.dumps(information), headers=headers)
-print(r.json())
-print("Hurray we found your flight! Only for " + str(flight['price']) + " EUR and remember the id of reservation "
-      + str(r.json()['pnr']) + "!!!!!!!!")
+# print(r.json())
+
+'''
+check if user wants some bag(s), price will be higher
+'''
+number_of_bags = len(flight['bags_price'])
+
+if int(check_flight['bags']) != 0 and int(check_flight['bags']) <= number_of_bags:
+        bag = (flight['bags_price'].get(check_flight['bags'])) + flight['price']
+        a = ''
+
+elif number_of_bags < int(check_flight['bags']):
+    bag = flight['price']
+    a = " Sorry, too much bags, you cannot take them all only " + str(number_of_bags) + "!!!!!!!!"
+
+else:
+    bag = flight['price']
+    a = ''
+
+
+print("Ok, so you wanna fly from " + str(flight['cityFrom']) + " to " + str(flight['cityTo'] )
+      + ", hm? Hurray we found your flight! Only for " + str(bag) + " EUR and remember the id of reservation "
+      + str(r.json()['pnr']) +"." + a)
 
