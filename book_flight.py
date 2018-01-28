@@ -2,7 +2,8 @@ import requests
 import argparse
 import datetime
 import json
-from collections import Counter
+import time
+
 '''
 user send his flight parameters 
 for example: --date 2018-04-13 --from BCN --to DUB --one-way
@@ -70,19 +71,28 @@ def check_args(check_flight):
 
 check_args(check_flight)
 
-# print(check_flight)
+
+'''
+call the kiwi api with data from user
+'''
 try:
     r = requests.get('https://api.skypicker.com/flights', params=check_flight)
     flight = r.json()['data'][0]
 except:
-    print('uups, something is wrong, check if your data are correct')
+    print('uups, something is wrong :( , check if your data are correct')
     exit()
-# print(flight)
 
-# booking of the flight
 
+
+'''
+url with 
+'''
 url = 'http://128.199.48.38:8080/booking'
 
+
+'''
+kiwi api needs to know some information about passenger, I created dummy one
+'''
 information = {
     "passengers": [
         {
@@ -103,7 +113,7 @@ information = {
 headers = {'content-type': 'application/json'}
 r = requests.post(url, data=json.dumps(information), headers=headers)
 # print(r.json())
-
+print(flight)
 '''
 check if user wants some bag(s), price will be higher
 '''
@@ -121,8 +131,10 @@ else:
     bag = flight['price']
     a = ''
 
-
-print("Ok, so you wanna fly from " + str(flight['cityFrom']) + " to " + str(flight['cityTo'] )
+# print(datetime.datetime.utcfromtimestamp(flight['aTime']).strftime('%Y-%m-%dT%H:%M:%SZ'))
+dtime = time.strftime("%D %H:%M", time.localtime(int(flight['dTimeUTC'])))
+atime = time.strftime("%D %H:%M", time.localtime(int(flight['aTimeUTC'])))
+print("Ok, so you wanna fly from " + str(flight['cityFrom']) + " to " + str(flight['cityTo'])
       + ", hm? Hurray we found your flight! Only for " + str(bag) + " EUR and remember the id of reservation "
-      + str(r.json()['pnr']) +"." + a)
+      + str(r.json()['pnr']) +"." + a + "Your flight is departed at " + dtime + " in UTC time. Arrival time is " + atime + " in UTC time." )
 
