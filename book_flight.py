@@ -3,25 +3,31 @@ import argparse
 import datetime
 import json
 import time
-
-'''
-user send his flight parameters 
-for example: --date 2018-04-13 --from BCN --to DUB --one-way
-'''
-parser = argparse.ArgumentParser(description='Kiwi weekend.')
-parser.add_argument('--from', required=True)
-parser.add_argument('--to', required=True)
-parser.add_argument('--date', required=True)
-parser.add_argument('--one-way', action='store_true')
-parser.add_argument('--cheapest', action='store_true')
-parser.add_argument('--shortest', action='store_true')
-parser.add_argument('--fastest', action='store_true')
-parser.add_argument('--return')
-parser.add_argument('--bags')
+import sys
 
 
-args = vars(parser.parse_args())
+def create_parser():
+    '''
+    take arguments from console input
+    for example: --date 2018-04-13 --from BCN --to DUB --one-way
+    :return: parser with data
+    '''
+    parser = argparse.ArgumentParser(description='Kiwi weekend.')
+    parser.add_argument('--from', required=True, help='args support Airports (City) in IATA format')
+    parser.add_argument('--to', required=True, help='args support Airports (City) in IATA format')
+    parser.add_argument('--date', required=True, help='use format YYYY-MM-DD')
+    parser.add_argument('--one-way', action='store_true', help='if you want to find one-way flight')
+    parser.add_argument('--cheapest', action='store_true', help='if you want to find cheapest flight')
+    parser.add_argument('--shortest', action='store_true', help='if you want to find shortest flight')
+    parser.add_argument('--fastest', action='store_true', help='if you want to find fastest flight')
+    parser.add_argument('--return', help='number with nights in destination, can be empty')
+    parser.add_argument('--bags', help='if want some bags with you, can be empty')
+    return parser
+
+create_parser()
+args = vars(create_parser().parse_args())
 # print(args)
+
 '''
 create a dict with values from user's param
 '''
@@ -110,10 +116,16 @@ information = {
     "bags": check_flight['bags']
 }
 # print(information)
-headers = {'content-type': 'application/json'}
-r = requests.post(url, data=json.dumps(information), headers=headers)
+try:
+    headers = {'content-type': 'application/json'}
+    r = requests.post(url, data=json.dumps(information), headers=headers)
+
+except requests.exceptions.HTTPError as err:
+    print(err)
+    sys.exit(1)
+
 # print(r.json())
-print(flight)
+
 '''
 check if user wants some bag(s), price will be higher
 '''
@@ -125,7 +137,8 @@ if int(check_flight['bags']) != 0 and int(check_flight['bags']) <= number_of_bag
 
 elif number_of_bags < int(check_flight['bags']):
     bag = flight['price']
-    a = " Sorry, too much bags, you cannot take them all only " + str(number_of_bags) + "!!!!!!!!"
+    a = " Sorry, too much bags, you cannot take them all only " + str(number_of_bags) + "!!!!!!!! The price is for flight " \
+                                                                                        "without any bags. "
 
 else:
     bag = flight['price']
